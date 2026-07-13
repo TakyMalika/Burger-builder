@@ -22,10 +22,12 @@ export const purchaseBurgerStart = () => {
     }
 }
 
-export const purchaseBurger = ( orderData, token ) => {
+export const purchaseBurger = ( orderData, token, userId ) => {
     return dispatch => {
         dispatch(purchaseBurgerStart());
-        axios.post('/orders.json?auth=' + token, orderData)
+        // Orders live under a per-user path so the database security rules can
+        // restrict reads/writes to the owning user (auth.uid === $uid).
+        axios.post('/orders/' + userId + '.json?auth=' + token, orderData)
             .then(response => {
                 dispatch(purchaseBurgerSuccess(response.data.name, orderData));
             })
@@ -64,8 +66,9 @@ export const fetchOrdersStart = () => {
 export const fetchOrders = (token, userId) => {
     return dispatch => {
         dispatch(fetchOrdersStart());
-        const queryParams = '?auth=' + token + '&orderBy="userId"&equalTo="' + userId + '"';
-        axios.get('/orders.json' + queryParams)
+        // Reading only the caller's own subtree; the security rules deny access
+        // to any other user's path, so orders cannot be enumerated across users.
+        axios.get('/orders/' + userId + '.json?auth=' + token)
             .then(res => {
                 const fetchedOrders = [];
                 for (let key in res.data) {

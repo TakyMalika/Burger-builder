@@ -39,6 +39,25 @@ export const checkAuthTimeout = (expirationTime) => {
     };
 };
 
+const friendlyAuthError = (code) => {
+    switch (code) {
+        case 'EMAIL_EXISTS':
+            return 'An account with this email already exists.';
+        case 'OPERATION_NOT_ALLOWED':
+            return 'This sign-in method is currently disabled.';
+        case 'TOO_MANY_ATTEMPTS_TRY_LATER':
+            return 'Too many attempts. Please try again later.';
+        case 'EMAIL_NOT_FOUND':
+        case 'INVALID_PASSWORD':
+        case 'INVALID_LOGIN_CREDENTIALS':
+            return 'Invalid email or password.';
+        case 'USER_DISABLED':
+            return 'This account has been disabled.';
+        default:
+            return 'Authentication failed. Please try again.';
+    }
+};
+
 export const auth = (email, password, isSignup) => {
     return dispatch => {
         dispatch(authStart());
@@ -47,10 +66,9 @@ export const auth = (email, password, isSignup) => {
             password: password,
             returnSecureToken: true
         };
-        let url = 'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyA9BUPdUz37tKyuvK8O7hyvxLBp0gmoZ-s';
-        if(!isSignup) {
-            url = 'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyA9BUPdUz37tKyuvK8O7hyvxLBp0gmoZ-s';
-        }
+        const apiKey = import.meta.env.REACT_APP_FIREBASE_API_KEY;
+        const endpoint = isSignup ? 'signUp' : 'signInWithPassword';
+        const url = `https://identitytoolkit.googleapis.com/v1/accounts:${endpoint}?key=${apiKey}`;
         axios.post(url, authData)
             .then(response => {
                 const expirationDate = new Date(new Date().getTime() + response.data.expiresIn * 1000);
@@ -61,7 +79,12 @@ export const auth = (email, password, isSignup) => {
                 dispatch(checkAuthTimeout(response.data.expiresIn));
             })
             .catch(err=> {
-                dispatch(authFail(err.response.data.error));
+                // Never surface raw backend error payloads to the UI; map to a
+                // safe, generic message instead.
+                const code = err.response && err.response.data && err.response.data.error
+                    ? err.response.data.error.message
+                    : null;
+                dispatch(authFail({ message: friendlyAuthError(code) }));
             })
     };
 };

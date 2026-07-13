@@ -1,0 +1,54 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "ingredients": {
+      ".read": true,
+      ".write": "auth != null && auth.token.admin === true",
+      "$ingredient": {
+        ".validate": "newData.isNumber() && newData.val() >= 0"
+      }
+    },
+
+    "orders": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+
+        "$orderId": {
+          ".validate": "newData.hasChildren(['ingredients', 'price', 'orderData'])",
+
+          "ingredients": {
+            "$ingredient": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 20"
+            }
+          },
+
+          "price": {
+            ".validate": "newData.isNumber() && newData.val() >= (4 + newData.parent().child('ingredients/salad').val() * 0.5 + newData.parent().child('ingredients/cheese').val() * 0.4 + newData.parent().child('ingredients/meat').val() * 1.3 + newData.parent().child('ingredients/bacon').val() * 0.7) - 0.001 && newData.val() <= (4 + newData.parent().child('ingredients/salad').val() * 0.5 + newData.parent().child('ingredients/cheese').val() * 0.4 + newData.parent().child('ingredients/meat').val() * 1.3 + newData.parent().child('ingredients/bacon').val() * 0.7) + 0.001"
+          },
+
+          "orderData": {
+            ".validate": "newData.hasChildren(['name', 'street', 'zipCode', 'country', 'email', 'deliveryMethod'])",
+            "name":           { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 100" },
+            "street":         { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 200" },
+            "zipCode":        { ".validate": "newData.isString() && newData.val().length >= 4 && newData.val().length <= 10" },
+            "country":        { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 100" },
+            "email":          { ".validate": "newData.isString() && newData.val().matches(/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/)" },
+            "deliveryMethod": { ".validate": "newData.isString() && (newData.val() === 'fastest' || newData.val() === 'cheapest')" },
+            "$other":         { ".validate": false }
+          },
+
+          "userId": {
+            ".validate": "newData.val() === $uid"
+          },
+
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    }
+  }
+}
