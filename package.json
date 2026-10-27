@@ -30,7 +30,7 @@
     "enzyme-adapter-react-16": "^1.15.8",
     "jsdom": "^25.0.1",
     "vite": "^7.3.6",
-    "vitest": "^3.2.7"
+    "vitest": "^5.0.5"
   },
   "browserslist": {
     "production": [
